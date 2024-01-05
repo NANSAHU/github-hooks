@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+import subprocess
+
+def get_current_branch():
+    return subprocess.check_output(
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"]
+    ).decode().strip()
+
+def get_latest_tag():
+    try:
+        return subprocess.check_output(
+            ["git", "describe", "--tags", "--abbrev=0"]
+        ).decode().strip()
+    except subprocess.CalledProcessError:
+        return "v0.0.0"  # Default tag if no tags are found
+
+def remove_beta_suffix(tag):
+    return tag.replace('-beta', '')
+
+def get_short_commit_id():
+    return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"]).decode().strip()
+
+def create_new_tag(base_version, commit_id):
+    new_tag = f"{base_version}-{commit_id}"
+    return new_tag
+
+def main():
+    if get_current_branch() == "main":
+        latest_tag = get_latest_tag()
+
+        # Remove the '-beta' suffix if present
+        latest_tag_without_beta = remove_beta_suffix(latest_tag)
+
+        subprocess.run(["git", "tag", latest_tag_without_beta])
+        print(f"New tag created: {latest_tag_without_beta}")
+
+        subprocess.run(["git", "push", "origin", latest_tag_without_beta])
+        print(f"Pushed tag '{latest_tag_without_beta}' to remote 'origin'.")
+
+if __name__ == "__main__":
+    main()
