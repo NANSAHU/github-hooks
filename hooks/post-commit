@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+import subprocess
+
+
+# Destination of the final changelog file
+OUTPUT_FILE = 'CHANGELOG.md'
+
+# Generate the changelog
+log_output = subprocess.check_output(['git', '--no-pager', 'log', '--no-merges', '--format=### %s%d%n>%aD%n%n>Author: %aN (%aE)%n%n>Commiter: %cN (%cE)%n%n%b%n%N%n']).decode('utf-8')
+
+with open(OUTPUT_FILE, 'w') as file:
+    file.write(log_output)
+
+# Prevent recursion!
+# Since a 'commit --amend' will trigger the post-commit script again
+# We have to check if the changelog file has changed or not
+git_status = subprocess.check_output(['git', 'status', '--porcelain']).decode('utf-8')
+res = git_status.count(f"{OUTPUT_FILE}")
+
+if res > 0:
+    subprocess.run(['git', 'add', OUTPUT_FILE])
+    subprocess.run(['git', 'commit', '--amend', '--no-edit'])
+    print(f"Populated Changelog in {OUTPUT_FILE}")
